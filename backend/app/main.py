@@ -5,8 +5,8 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import httpx
 
-from coingecko import CoinGeckoAPIError, CoinGeckoClient
-from service import ScreenerService
+from .coinpaprika import CoinPaprikaClient
+from .service import ScreenerService
 
 
 class Coin(BaseModel):
@@ -16,10 +16,8 @@ class Coin(BaseModel):
     market_cap: float
     fdv: float
     volume_24h: float
-    tvl: float
     max_supply: float
     total_supply: float
-    preview_listing: bool
 
 
 class FilteredResponse(BaseModel):
@@ -30,13 +28,13 @@ class FilteredResponse(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = CoinGeckoClient()
+    client = CoinPaprikaClient()
     app.state.service = ScreenerService(client)
     yield
     await client.close()
 
 
-app = FastAPI(title="CoinGecko Screener", lifespan=lifespan)
+app = FastAPI(title="Crypto Project Screener", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -49,8 +47,8 @@ async def filtered_coins(refresh: bool = Query(False, description="Bypass cache"
     service: ScreenerService = app.state.service
     try:
         coins = await service.get_filtered(refresh=refresh)
-    except (httpx.HTTPError, CoinGeckoAPIError) as exc:
-        raise HTTPException(status_code=502, detail=f"CoinGecko error: {exc}")
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail=f"Market-data error: {exc}")
     return FilteredResponse(
         count=len(coins),
         cached_age_seconds=int(time.time() - service.cached_at),
