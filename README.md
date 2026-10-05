@@ -48,3 +48,8 @@ UI bypasses the cache. Tests can be run with:
 ```bash
 python -m unittest discover -s backend/tests -v
 ```
+
+## AI workflow
+ Claude/ Copilot
+AI assistance was used to fix issues as they arose, research where and how
+changes could be made better, and prepare the documentation.
